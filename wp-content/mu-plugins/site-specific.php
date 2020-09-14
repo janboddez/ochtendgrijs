@@ -62,6 +62,25 @@ add_filter( 'micropub_syndicate-to', function( $syndicate_to, $user_id ) {
 }, 10, 2 );
 
 /**
+ * Return the homepage rather than an author page URL.
+ */
+add_filter( 'author_link', function( $link ) {
+	// Single-author blog.
+	return home_url( '/' );
+} );
+
+add_action( 'template_redirect', function() {
+	if ( is_admin() ) {
+		return;
+	}
+
+	if ( is_author() ) {
+		wp_redirect( home_url( '/' ), 301 );
+		exit;
+	}
+} );
+
+/**
  * Have Notes and Likes appear right under Posts in WP Admin's main menu.
  */
 add_filter( 'custom_menu_order', '__return_true' );
