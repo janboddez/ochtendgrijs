@@ -29,7 +29,7 @@ add_filter( 'micropub_post_content', function( $post_content, $input ) {
 
 	if ( ! empty( $input['properties']['in-reply-to'][0] ) && false === stripos( $input['properties']['in-reply-to'][0], $post_content ) ) {
 		// Reply, yet missing a backlink. Won't do anything if a backlink's already present, i.e., was manually added.
-		$post_content  = '<i>Als antwoord op <a class="in-reply-to" href="' . esc_url( $input['properties']['in-reply-to'][0] ) . '">' . esc_url( $input['properties']['in-reply-to'][0] ) . '.</a></i>';
+		$post_content  = '<i>Als antwoord op <a class="u-in-reply-to" href="' . esc_url( $input['properties']['in-reply-to'][0] ) . '">' . esc_url( $input['properties']['in-reply-to'][0] ) . '.</a></i>';
 		$post_content .= "\n\n" . wp_strip_all_tags( $input['properties']['content'][0] );
 	}
 
