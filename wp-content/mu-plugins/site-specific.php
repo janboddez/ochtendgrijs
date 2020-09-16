@@ -7,9 +7,8 @@
  * types dealt with below, which I deal with in my theme. (I don't use very
  * many other types.)
  *
- * Also, these aren't Gutenberg-flavored, yet (they'd show up as a "Classic"
- * block), which is OK. I haven't enabled Gutenberg for the CPTs I'm using.
- * Wouldn't make sense, really, for such short, mostly plain-text entries.
+ * Also, these aren't Gutenberg-flavored, yet, which is OK. I haven't enabled
+ * Gutenberg for the CPTs I'm using.
  */
 add_filter( 'micropub_post_content', function( $post_content, $input ) {
 	if ( ! empty( $input['properties']['like-of'][0] ) ) {
@@ -29,7 +28,7 @@ add_filter( 'micropub_post_content', function( $post_content, $input ) {
 
 	if ( ! empty( $input['properties']['in-reply-to'][0] ) && false === stripos( $input['properties']['in-reply-to'][0], $post_content ) ) {
 		// Reply, yet missing a backlink. Won't do anything if a backlink's already present, i.e., was manually added.
-		$post_content  = '<i>Als antwoord op <a class="u-in-reply-to" href="' . esc_url( $input['properties']['in-reply-to'][0] ) . '">' . esc_url( $input['properties']['in-reply-to'][0] ) . '.</a></i>';
+		$post_content  = '<i>Als antwoord op <a class="u-in-reply-to" href="' . esc_url( $input['properties']['in-reply-to'][0] ) . '">' . esc_url( $input['properties']['in-reply-to'][0] ) . '</a>.</i>';
 		$post_content .= "\n\n" . wp_strip_all_tags( $input['properties']['content'][0] );
 	}
 
