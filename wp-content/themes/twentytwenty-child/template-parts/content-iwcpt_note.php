@@ -23,7 +23,7 @@
 
 	?>
 
-	<div class="post-inner <?php echo is_page_template( 'templates/template-full-width.php' ) ? '' : 'thin'; ?> " style="padding-top: 0; padding-bottom: 1.5rem;">
+	<div class="post-inner <?php echo is_page_template( 'templates/template-full-width.php' ) ? '' : 'thin'; ?> " style="padding-top: 1.5rem; padding-bottom: 1.5rem;">
 
 		<div class="entry-content">
 

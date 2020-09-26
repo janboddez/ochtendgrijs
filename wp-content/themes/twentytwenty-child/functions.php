@@ -1,7 +1,17 @@
 <?php
 
+/**
+ * Load parent styles.
+ */
 add_action( 'wp_enqueue_scripts', function() {
-	wp_enqueue_style( 'twentytwenty-style', get_template_directory_uri() . '/style.css' );
+	wp_enqueue_style( 'twentytwenty-style', get_template_directory_uri() . '/style.css' ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+} );
+
+/**
+ * Enable i18n.
+ */
+add_action( 'after_setup_theme', function() {
+	load_child_theme_textdomain( 'twentytwenty-child', get_stylesheet_directory() . '/languages' );
 } );
 
 /**
@@ -34,7 +44,7 @@ add_filter( 'the_content', function( $content ) {
 		return $content;
 	}
 
-	if ( ! preg_match( '/ class=["\']e-content["\']/', $content ) ) {
+	if ( ! preg_match( '/ class="(?:.*?)e-content(?:.*?)"/', $content ) ) {
 		return '<div class="e-content">' . $content . '</div>';
 	}
 
@@ -56,55 +66,105 @@ add_filter( 'the_excerpt', function( $content ) {
 	return $content;
 } );
 
+/**
+ * Adds support for Fediverse social icons.
+ */
 if ( class_exists( 'Fediverse_Icons_Jetpack' ) ) :
 	// Unhook the plugin's "default" callback.
 	remove_filter( 'walker_nav_menu_start_el', array( Fediverse_Icons_Jetpack::get_instance(), 'apply_icon' ), 100 );
 
 	// And add our own instead.
 	add_filter( 'walker_nav_menu_start_el', function( $item_output, $item, $depth, $args ) {
-	if ( ! class_exists( 'Jetpack' ) ) {
-		// Jetpack not installed?
-		return $item_output;
-	}
+		if ( ! class_exists( 'Jetpack' ) ) {
+			// Jetpack not installed?
+			return $item_output;
+		}
 
-	$social_icons = array(
-		'Diaspora'   => 'diaspora',
-		'Friendica'  => 'friendica',
-		'GNU Social' => 'gnu-social',
-		'Mastodon'   => 'mastodon',
-		'PeerTube'   => 'peertube',
-		'Pixelfed'   => 'pixelfed',
-	);
+		$social_icons = array(
+			'Diaspora'   => 'diaspora',
+			'Friendica'  => 'friendica',
+			'GNU Social' => 'gnu-social',
+			'Mastodon'   => 'mastodon',
+			'PeerTube'   => 'peertube',
+			'Pixelfed'   => 'pixelfed',
+		);
 
-	if ( 'social' === $args->theme_location ) {
-		// Twenty Twenty's social menu.
-		foreach ( $social_icons as $attr => $value ) {
-			if ( false !== stripos( $item_output, $attr )  ) {
-				// Only for above Fediverse platforms, replace the icon
-				// previously added by Twenty Twenty.
-				$item_output = preg_replace(
-					'@<svg(.+?)</svg>@i',
-					jetpack_social_menu_get_svg( array( 'icon' => esc_attr( $value ) ) ),
-					$item_output
-				);
+		if ( 'social' === $args->theme_location ) {
+			// Twenty Twenty's social menu.
+			foreach ( $social_icons as $attr => $value ) {
+				if ( false !== stripos( $item_output, $attr ) ) {
+					// Only for above Fediverse platforms, replace the icon
+					// previously added by Twenty Twenty.
+					$item_output = preg_replace(
+						'@<svg(.+?)</svg>@i',
+						jetpack_social_menu_get_svg( array( 'icon' => esc_attr( $value ) ) ),
+						$item_output
+					);
+				}
 			}
 		}
-	}
 
-	return $item_output;
+		return $item_output;
 	}, 100, 4 );
 endif;
 
 /**
- * Adds `h-card` info to author meta, and a `u-url` to permalinks and so on.
+ * Removes comments counter (and link) from post meta.
+ */
+add_filter( 'twentytwenty_post_meta_location_single_top', function( $post_meta ) {
+	$key = array_search( 'comments', $post_meta, true );
+
+	if ( false !== $key ) {
+		unset( $post_meta[ $key ] );
+	}
+
+	return $post_meta;
+} );
+
+/**
+ * Adds syndication links to post meta.
+ */
+add_action( 'twentytwenty_end_of_post_meta_list', function( $post_id, $post_meta, $location ) {
+	if ( 'single-top' !== $location ) {
+		return;
+	}
+
+	$url = get_post_meta( $post_id, '_share_on_mastodon_url', true );
+
+	if ( '' !== $url ) {
+		?>
+		<li class="post-sticky meta-wrapper">
+			<span class="meta-text">
+				<?php
+				/* translators: syndication link */
+				printf( __( 'Also on %s', 'twentytwenty-child' ), '<a class="u-syndication" href="' . esc_url( $url ) . '">Mastodon</a>' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				?>
+			</span>
+		</li>
+		<?php
+	}
+}, 10, 3 );
+
+/**
+ * Merely displays the result of `iw_get_post_meta()`.
  *
- * Too big a function, pretty much lifted from Twenty Twenty.
+ * @param int    $post_id  Post ID.
+ * @param string $location Which post meta location to output.
  */
 function iw_the_post_meta( $post_id = null, $location = 'single-top' ) {
 	echo iw_get_post_meta( $post_id, $location ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in twentytwenty_get_post_meta().
 }
 
+/**
+ * Adds `h-card` info to author meta, and a `u-url` to permalinks and so on.
+ *
+ * Too big a function, pretty much lifted from Twenty Twenty.
+ *
+ * @param int    $post_id  Post ID.
+ * @param string $location Which post meta location to output.
+ */
 function iw_get_post_meta( $post_id = null, $location = 'single-top' ) {
+	// @codingStandardsIgnoreStart
 	// Require post ID.
 	if ( ! $post_id ) {
 		return;
@@ -213,7 +273,7 @@ function iw_get_post_meta( $post_id = null, $location = 'single-top' ) {
 				if ( post_type_supports( get_post_type( $post_id ), 'author' ) && in_array( 'author', $post_meta, true ) ) {
 					$has_meta = true;
 					?>
-					<li class="post-author meta-wrapper">
+					<li class="post-author meta-wrapper screen-reader-text">
 						<span class="meta-icon">
 							<span class="screen-reader-text"><?php _e( 'Post author', 'twentytwenty' ); ?></span>
 							<?php twentytwenty_the_theme_svg( 'user' ); ?>
@@ -337,4 +397,5 @@ function iw_get_post_meta( $post_id = null, $location = 'single-top' ) {
 			return $meta_output;
 		}
 	}
+	// @codingStandardsIgnoreEnd
 }
