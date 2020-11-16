@@ -40,7 +40,7 @@ add_action( 'wp_head', function() {
 /**
  * Add (Jetpack) Markdown support to our IndieWeb CPTs.
  */
-add_action('init', function() {
+add_action( 'init', function() {
 	add_post_type_support( 'iwcpt_note', 'wpcom-markdown' );
 	add_post_type_support( 'iwcpt_like', 'wpcom-markdown' );
 } );
@@ -85,7 +85,7 @@ add_filter( 'webmention_comments_post_types', function( $supported_post_types ) 
 } );
 
 /**
- * Allow <small> inside comments.
+ * Allow `<small>` inside comments.
  */
 add_filter( 'pre_comment_content', function( $comment_content ) {
 	global $allowedtags;
