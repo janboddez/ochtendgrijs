@@ -1,7 +1,5 @@
 <?php
 
-add_filter( 'share_on_mastodon_enabled', '__return_true', 999 );
-
 /**
  * Forces hidden custom fields to be shown.
  */
