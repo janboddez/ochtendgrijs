@@ -1,5 +1,7 @@
 <?php
 
+add_filter( 'share_on_mastodon_enabled', '__return_true', 999 );
+
 /**
  * Forces hidden custom fields to be shown.
  */
@@ -25,26 +27,52 @@ add_action( 'admin_head', function() {
 /**
  * Somewhat declutter our `head`.
  */
+remove_action( 'wp_head', 'wlwmanifest_link' );
+remove_action( 'wp_head', 'wp_generator' );
+
+// Disable feeds, except RSS2, for which we're using a modified template.
+add_action( 'template_redirect', function() {
+	if ( is_feed() && ! is_feed( 'rss2' ) ) {
+		global $wp_query;
+		$wp_query->set_404();
+		status_header( 404 );
+		// Note: the above isn't enough if we want to display a (HTML) 404 page,
+		// too.
+		header( 'Content-Type: text/html' );
+		locate_template( '404.php', true, true );
+		exit;
+	}
+} );
+
+// Remove the comment feeds link.
 add_filter( 'feed_links_show_comments_feed', '__return_false' );
-add_filter( 'xmlrpc_enabled', '__return_false' );
+
+// And, I believe, the feed generator tag.
 add_filter( 'the_generator', function() {
 	return '';
 } );
 
-add_action( 'wp_head', function() {
-	remove_action( 'wp_head', 'rsd_link' );
-	remove_action( 'wp_head', 'wlwmanifest_link' );
-	remove_action( 'wp_head', 'wp_generator' );
-}, 1 );
+// Note: Leave XML-RPC enabled for tests involving the official WP Android app.
+add_filter( 'xmlrpc_enabled', '__return_false' );
+remove_action( 'wp_head', 'rsd_link' );
 
 /**
  * Add (Jetpack) Markdown support to our IndieWeb CPTs.
  */
 add_action( 'init', function() {
 	add_post_type_support( 'iwcpt_note', 'wpcom-markdown' );
-	add_post_type_support( 'iwcpt_like', 'wpcom-markdown' );
 } );
 
+/**
+ * Include microblog posts in search results.
+ */
+add_filter( 'pre_get_posts', function( $query ) {
+	if ( $query->is_search ) {
+		$query->set( 'post_type', array( 'post', 'page', 'iwcpt_note' ) );
+	}
+
+	return $query;
+} );
 
 /**
  * Include microblog posts in the site's main RSS feed.
@@ -59,14 +87,22 @@ add_filter( 'request', function( $request ) {
 }, 9 );
 
 /**
- * Include microblog posts in search results.
+ * Define a new feed URL for just articles (i.e., WordPress's default "posts").
+ *
+ * After first adding this rule, visit Settings > Permalinks.
  */
-add_filter( 'pre_get_posts', function( $query ) {
-	if ( $query->is_search ) {
-		$query->set( 'post_type', array( 'post', 'page', 'iwcpt_note' ) );
+add_filter( 'generate_rewrite_rules', function( $wp_rewrite ) {
+	if ( empty( $wp_rewrite->front ) ) {
+		return $wp_rewrite;
 	}
 
-	return $query;
+	$feed_rules = array(
+		trim( $wp_rewrite->front, '/' ) . '/feed/?$' => 'index.php?post_type=post&feed=rss2',
+	);
+
+	$wp_rewrite->rules = $feed_rules + $wp_rewrite->rules;
+
+	return $wp_rewrite;
 } );
 
 /**

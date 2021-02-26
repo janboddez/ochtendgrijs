@@ -90,3 +90,4 @@ wp-content/*
 wp-content/themes/*
 !wp-content/themes/twentytwenty-child/
 !wp-content/themes/twentytwenty-child/*
+wp-content/themes/twentytwenty-child/phpcs.xml

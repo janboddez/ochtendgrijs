@@ -18,23 +18,35 @@ add_action( 'after_setup_theme', function() {
  * Add `h-feed` to archive pages.
  */
 add_filter( 'body_class', function( $classes ) {
-	if ( is_home() || is_archive() || is_search() ) {
-		$classes[] = 'h-feed';
+	if ( in_array( 'h-feed', $classes, true ) ) {
+		return $classes;
 	}
 
+	if ( ! ( is_home() || is_archive() || is_search() ) ) {
+		return $classes;
+	}
+
+	$classes[] = 'h-feed';
+
 	return $classes;
-} );
+}, 999 );
 
 /**
  * Add `h-entry` to posts.
  */
 add_filter( 'post_class', function( $classes ) {
-	if ( ! is_admin() ) {
-		$classes[] = 'h-entry';
+	if ( in_array( 'h-entry', $classes, true ) ) {
+		return $classes;
 	}
 
+	if ( is_admin() ) {
+		return $classes;
+	}
+
+	$classes[] = 'h-entry';
+
 	return $classes;
-} );
+}, 999 );
 
 /**
  * Wraps `the_content` in `e-content`.
@@ -44,12 +56,14 @@ add_filter( 'the_content', function( $content ) {
 		return $content;
 	}
 
-	if ( ! preg_match( '/ class="(?:.*?)e-content(?:.*?)"/', $content ) ) {
+	// Allow either single or double quotes. Technically, no quotes would be
+	// allowed, too, but let's not go there.
+	if ( ! preg_match( '~ class=("|\')([^"\']*?)e-content([^"\']*?)("|\')~', $content ) ) {
 		return '<div class="e-content">' . $content . '</div>';
 	}
 
 	return $content;
-} );
+}, 999 );
 
 /**
  * Wraps `the_excerpt` in `p-summary`.
@@ -59,12 +73,12 @@ add_filter( 'the_excerpt', function( $content ) {
 		return $content;
 	}
 
-	if ( ! preg_match( '/ class=["\']p-summary["\']/', $content ) ) {
+	if ( ! preg_match( '~ class=("|\')([^"\']*?)p-summary([^"\']*?)("|\')~', $content ) ) {
 		return '<div class="p-summary">' . $content . '</div>';
 	}
 
 	return $content;
-} );
+}, 999 );
 
 /**
  * Adds support for Fediverse social icons.
@@ -129,15 +143,29 @@ add_action( 'twentytwenty_end_of_post_meta_list', function( $post_id, $post_meta
 		return;
 	}
 
-	$url = get_post_meta( $post_id, '_share_on_mastodon_url', true );
+	$syndication_links = array(
+		'Mastodon' => get_post_meta( $post_id, '_share_on_mastodon_url', true ),
+		'Twitter'  => get_post_meta( $post_id, '_share_on_twitter_url', true ),
+	);
 
-	if ( '' !== $url ) {
+	// Remove empty values.
+	$syndication_links = array_filter( $syndication_links );
+
+	if ( ! empty( $syndication_links ) ) {
 		?>
 		<li class="post-sticky meta-wrapper">
 			<span class="meta-text">
 				<?php
-				/* translators: syndication link */
-				printf( __( 'Also on %s', 'twentytwenty-child' ), '<a class="u-syndication" href="' . esc_url( $url ) . '">Mastodon</a>' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				$output = '';
+
+				foreach ( $syndication_links as $name => $url ) {
+					$output .= '<a class="u-syndication" href="' . esc_url( $url ) . '">' . $name . '</a>, '; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				}
+
+				$output = substr( $output, 0, -2 );
+
+				/* translators: syndication links */
+				printf( __( 'Also on %s', 'twentytwenty-child' ), $output ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 				?>
 			</span>
 		</li>

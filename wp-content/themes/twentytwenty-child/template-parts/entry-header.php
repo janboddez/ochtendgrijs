@@ -42,7 +42,7 @@ if ( is_singular() ) {
 			<?php
 		}
 
-		if ( 'iwcpt_note' === get_post_type() ) {
+		if ( in_array( get_post_type(), array( 'iwcpt_like', 'iwcpt_note' ), true ) ) {
 			// Note. That is, if not a bookmark. Sigh.
 			if ( is_singular() ) {
 				the_title( '<h1 class="entry-title screen-reader-text">', '</h1>' );
